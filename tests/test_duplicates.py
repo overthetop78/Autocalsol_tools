@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from autocalsol_tools.duplicates import DuplicateOptions, analyze_duplicates, export_duplicates
+from src.services.duplicate_service import DuplicateOptions, analyze_duplicates, export_duplicates
 
 
 def test_internal_and_external_duplicates_with_options(tmp_path):

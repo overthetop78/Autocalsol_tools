@@ -22,20 +22,20 @@ def main() -> int:
     parser = _parser()
     args = parser.parse_args()
     if args.command == "convert":
-        from autocalsol_tools.converter import convert_to_autocalsol
+        from src.services.autocalsol_service import convert_to_autocalsol
 
         results = convert_to_autocalsol(args.input, args.output, progress=print)
         for result in results:
             print(f"{result.path} : {result.row_count} lignes")
         return 0
     if args.command == "duplicates":
-        from autocalsol_tools.duplicates import export_duplicates, find_duplicates
+        from src.services.duplicate_service import export_duplicates, find_duplicates
 
         results = find_duplicates(args.files, selected_column=args.column)
         path = export_duplicates(results, args.output)
         print(f"{len(results)} occurrence(s) exportée(s) vers {path}")
         return 0
-    from autocalsol_tools.gui import run_gui
+    from src.ui import run_gui
 
     return run_gui()
 

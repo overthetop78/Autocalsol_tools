@@ -4,7 +4,7 @@ from datetime import datetime
 
 from openpyxl import Workbook
 
-from autocalsol_tools.loader import detect_xlsx_tables, load_curve_points
+from src.core.load_curve import detect_xlsx_tables, load_curve_points
 
 
 def test_detects_only_load_curve_sheet(tmp_path):

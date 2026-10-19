@@ -7,7 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
 
-from autocalsol_tools.gui.main_window import MainWindow
+from src.ui.app import MainWindow
 
 
 def test_background_worker_is_kept_alive_and_runs():

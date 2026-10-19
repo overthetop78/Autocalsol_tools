@@ -10,7 +10,7 @@ from typing import Iterable, Iterator
 import pandas as pd
 from openpyxl import load_workbook
 
-from .normalization import normalized_text
+from ..utils.text import normalized_text
 
 
 SUPPORTED_TABLES = {".csv", ".xlsx", ".xlsm", ".xls", ".ods"}

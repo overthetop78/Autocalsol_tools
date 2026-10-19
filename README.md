@@ -22,6 +22,18 @@ les doublons dans des fichiers tabulaires.
 Les CSV Autocalsol sont écrits en UTF-8 avec BOM, séparateur `;`, avec les
 colonnes `date`, `heure`, `valeur`.
 
+## Organisation du code
+
+```text
+src/
+├── core/       # modèles et lecture des courbes de charge
+├── services/   # conversion Autocalsol et recherche de doublons
+├── ui/         # application PySide6, composants et thème
+└── utils/      # fonctions communes
+tests/          # tests automatisés
+main.py         # point d'entrée GUI et ligne de commande
+```
+
 ## Installation et lancement
 
 ```powershell

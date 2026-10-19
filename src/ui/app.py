@@ -12,13 +12,13 @@ from PySide6.QtWidgets import (
     QSplitter, QTabWidget, QTextEdit, QVBoxLayout, QWidget,
 )
 
-from ..converter import ConversionOptions, convert_to_autocalsol
-from ..duplicates import (
+from ..services.autocalsol_service import ConversionOptions, convert_to_autocalsol
+from ..services.duplicate_service import (
     DuplicateAnalysis, DuplicateOptions, analyze_duplicates, export_duplicates,
     get_available_columns, supported_files_in_folder,
 )
 from .theme import APP_STYLE
-from .widgets import CheckableFileList, ColumnList, Panel, PathField, ResultsTable
+from .components import CheckableFileList, ColumnList, Panel, PathField, ResultsTable
 
 
 class Worker(QObject):

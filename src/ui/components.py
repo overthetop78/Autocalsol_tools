@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
-from ..duplicates import DuplicateOccurrence
+from ..services.duplicate_service import DuplicateOccurrence
 
 
 class Panel(QFrame):

@@ -10,9 +10,9 @@ from typing import Callable
 
 import pandas as pd
 
-from .loader import load_curve_points
-from .models import ExportResult, LoadCurvePoint
-from .normalization import normalized_text, safe_filename
+from ..core.load_curve import load_curve_points
+from ..core.models import ExportResult, LoadCurvePoint
+from ..utils.text import normalized_text, safe_filename
 
 
 ProgressCallback = Callable[[str], None]

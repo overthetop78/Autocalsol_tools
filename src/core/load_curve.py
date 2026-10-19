@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .models import DetectedTable, LoadCurvePoint
-from .normalization import normalized_text
+from ..utils.text import normalized_text
 
 
 ProgressCallback = Callable[[str], None]

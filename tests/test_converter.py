@@ -5,8 +5,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from autocalsol_tools.converter import ConversionOptions, _annual_frame
-from autocalsol_tools.models import LoadCurvePoint
+from src.services.autocalsol_service import ConversionOptions, _annual_frame
+from src.core.models import LoadCurvePoint
 
 
 def point(timestamp: datetime, value: float = 1000, unit: str = "Watt") -> LoadCurvePoint:
