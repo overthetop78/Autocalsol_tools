@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSettings, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QFileDialog, QFrame, QHBoxLayout,
@@ -17,6 +17,7 @@ from ..services.duplicate_service import (
     DuplicateAnalysis, DuplicateOptions, analyze_duplicates, export_duplicates,
     get_available_columns, supported_files_in_folder,
 )
+from ..utils.settings import create_settings, default_work_directory
 from .theme import APP_STYLE
 from .components import CheckableFileList, ColumnList, Panel, PathField, ResultsTable
 
@@ -43,7 +44,7 @@ class Worker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.settings = QSettings("AutocalsolTools", "AutocalsolTools")
+        self.settings = create_settings()
         self._threads: list[QThread] = []
         # Garder une référence Python vers chaque worker jusqu'à la fin du
         # thread. Sans cela, PySide peut détruire le QObject avant que
@@ -94,13 +95,10 @@ class MainWindow(QMainWindow):
         )
         controls.setMinimumWidth(390)
         controls.setMaximumWidth(470)
-        self.base_folder = PathField("Dossier de base", "Emplacement de travail par défaut", "Choisir")
-        self.base_folder.browseRequested.connect(self._choose_base_folder)
         self.curve_source = PathField("Fichier XLSX ou CSV", "Aucun fichier sélectionné")
         self.curve_source.browseRequested.connect(self._choose_curve_source)
         self.curve_output = PathField("Dossier de sortie", "Dossier des exports", "Choisir")
         self.curve_output.browseRequested.connect(self._choose_curve_output)
-        controls.layout.addWidget(self.base_folder)
         controls.layout.addWidget(self.curve_source)
         controls.layout.addWidget(self.curve_output)
 
@@ -254,12 +252,11 @@ class MainWindow(QMainWindow):
         return page
 
     def _choose_curve_source(self):
-        start = self.base_folder.text() or self.settings.value("conversion/source_dir", "", str)
+        start = self.settings.value("conversion/source_dir", str(default_work_directory()), str)
         path, _ = QFileDialog.getOpenFileName(self, "Courbe de charge", start, "Données (*.xlsx *.xlsm *.csv)")
         if path:
             self.curve_source.setText(path)
             self.settings.setValue("conversion/source_dir", str(Path(path).parent))
-            self.settings.setValue("conversion/source_file", path)
             if not self.curve_output.text():
                 self.curve_output.setText(str(Path(path).parent / f"{Path(path).stem}_Autocalsol"))
 
@@ -268,18 +265,6 @@ class MainWindow(QMainWindow):
         if path:
             self.curve_output.setText(path)
             self.settings.setValue("conversion/output_dir", path)
-
-    def _choose_base_folder(self):
-        start = self.base_folder.text() or str(Path.home())
-        path = QFileDialog.getExistingDirectory(self, "Dossier de base", start)
-        if not path:
-            return
-        self.base_folder.setText(path)
-        self.settings.setValue("general/base_dir", path)
-        if not self.curve_output.text():
-            self.curve_output.setText(str(Path(path) / "Sorties_Autocalsol"))
-        if not self.duplicate_output.text():
-            self.duplicate_output.setText(str(Path(path) / "Rapports_Doublons"))
 
     def _convert(self):
         source, output = self.curve_source.text(), self.curve_output.text()
@@ -324,14 +309,14 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, "Conversion impossible", message.split("\n", 1)[0])
 
     def _add_duplicate_files(self):
-        start = self.settings.value("duplicates/source_dir", "", str)
+        start = self.settings.value("duplicates/source_dir", str(default_work_directory()), str)
         paths, _ = QFileDialog.getOpenFileNames(self, "Fichiers à analyser", start, "Tables (*.csv *.xlsx *.xlsm *.xls *.ods)")
         if paths:
             self.settings.setValue("duplicates/source_dir", str(Path(paths[0]).parent))
             self.duplicate_files.add_paths(paths)
 
     def _add_duplicate_folder(self):
-        start = self.settings.value("duplicates/source_dir", "", str)
+        start = self.settings.value("duplicates/source_dir", str(default_work_directory()), str)
         folder = QFileDialog.getExistingDirectory(self, "Dossier à analyser", start)
         if folder:
             self.settings.setValue("duplicates/source_dir", folder)
@@ -341,7 +326,6 @@ class MainWindow(QMainWindow):
 
     def _duplicate_sources_changed(self):
         paths = self.duplicate_files.selected_paths()
-        self.settings.setValue("duplicates/files", self.duplicate_files.all_paths())
         if not paths:
             self.column_list.clear()
             return
@@ -410,7 +394,7 @@ class MainWindow(QMainWindow):
     def _export_duplicate_result(self, extension: str):
         if not self.last_duplicate_result:
             return
-        folder = self.duplicate_output.text() or str(Path.cwd() / "output")
+        folder = self.duplicate_output.text() or str(default_work_directory() / "Rapports_Doublons")
         Path(folder).mkdir(parents=True, exist_ok=True)
         name = f"doublons_{datetime.now():%Y%m%d_%H%M%S}.{extension}"
         path = export_duplicates(self.last_duplicate_result, Path(folder) / name)
@@ -424,16 +408,14 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(folder).resolve())))
 
     def _restore_settings(self):
-        base = self.settings.value("general/base_dir", str(Path.home()), str)
-        self.base_folder.setText(base)
-        source = self.settings.value("conversion/source_file", "", str)
-        if source and Path(source).is_file():
-            self.curve_source.setText(source)
-        self.curve_output.setText(self.settings.value("conversion/output_dir", "", str))
+        default_root = default_work_directory()
+        self.curve_output.setText(
+            self.settings.value("conversion/output_dir", str(default_root / "Sorties_Autocalsol"), str)
+        )
         step = int(self.settings.value("conversion/step", 30))
         index = self.step_combo.findData(step)
         self.step_combo.setCurrentIndex(index if index >= 0 else 3)
-        default_reports = str(Path.cwd() / "output")
+        default_reports = str(default_root / "Rapports_Doublons")
         self.duplicate_output.setText(self.settings.value("duplicates/output_dir", default_reports, str))
         self.recursive_checkbox.setChecked(self.settings.value("duplicates/recursive", True, bool))
         self.business_mode.setChecked(self.settings.value("duplicates/business_mode", False, bool))
@@ -441,18 +423,11 @@ class MainWindow(QMainWindow):
         self.lower_checkbox.setChecked(self.settings.value("duplicates/lowercase", True, bool))
         self.zero_checkbox.setChecked(self.settings.value("duplicates/ignore_zero", True, bool))
         self.unnamed_checkbox.setChecked(self.settings.value("duplicates/ignore_unnamed", True, bool))
-        saved_files = self.settings.value("duplicates/files", [], list)
-        existing = [path for path in saved_files if Path(path).is_file()]
-        if existing:
-            self.duplicate_files.add_paths(existing)
 
     def _save_settings(self, *_):
-        self.settings.setValue("general/base_dir", self.base_folder.text())
-        self.settings.setValue("conversion/source_file", self.curve_source.text())
         self.settings.setValue("conversion/output_dir", self.curve_output.text())
         self.settings.setValue("conversion/step", int(self.step_combo.currentData()))
         self.settings.setValue("duplicates/output_dir", self.duplicate_output.text())
-        self.settings.setValue("duplicates/files", self.duplicate_files.all_paths())
         self.settings.setValue("duplicates/recursive", self.recursive_checkbox.isChecked())
         self.settings.setValue("duplicates/business_mode", self.business_mode.isChecked())
         self.settings.setValue("duplicates/trim", self.trim_checkbox.isChecked())

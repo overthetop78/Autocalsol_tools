@@ -10,7 +10,8 @@ from PySide6.QtWidgets import QApplication
 from src.ui.app import MainWindow
 
 
-def test_background_worker_is_kept_alive_and_runs():
+def test_background_worker_is_kept_alive_and_runs(tmp_path, monkeypatch):
+    monkeypatch.setenv("AUTOCALSOL_CONFIG_DIR", str(tmp_path / "config"))
     app = QApplication.instance() or QApplication([])
     window = MainWindow()
     completed: list[str] = []

@@ -17,7 +17,8 @@ les doublons dans des fichiers tabulaires.
 - recherche complète de doublons internes ou externes dans des fichiers ou dossiers ;
 - sélection métier des colonnes et règles de normalisation configurables ;
 - tableau détaillé et exports de rapports CSV ou Excel ;
-- mémorisation des dossiers et fichiers sélectionnés.
+- mémorisation des derniers dossiers utilisés et des options, sans conserver
+  les fichiers sources sélectionnés.
 
 Les CSV Autocalsol sont écrits en UTF-8 avec BOM, séparateur `;`, avec les
 colonnes `date`, `heure`, `valeur`.
@@ -33,6 +34,10 @@ src/
 tests/          # tests automatisés
 main.py         # point d'entrée GUI et ligne de commande
 ```
+
+Les préférences sont enregistrées dans
+`%APPDATA%\AutocalsolTools\settings.ini`. Aucun résultat ni fichier de
+configuration n'est créé dans le dossier d'installation de l'application.
 
 ## Installation et lancement
 
