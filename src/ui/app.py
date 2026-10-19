@@ -17,7 +17,7 @@ from ..services.duplicate_service import (
     DuplicateAnalysis, DuplicateOptions, analyze_duplicates, export_duplicates,
     get_available_columns, supported_files_in_folder,
 )
-from ..utils.settings import create_settings, default_work_directory
+from ..utils.settings import application_directories, create_settings, default_work_directory
 from .theme import APP_STYLE
 from .components import CheckableFileList, ColumnList, Panel, PathField, ResultsTable
 
@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.settings = create_settings()
+        self.directories = application_directories()
         self._threads: list[QThread] = []
         # Garder une référence Python vers chaque worker jusqu'à la fin du
         # thread. Sans cela, PySide peut détruire le QObject avant que
@@ -151,7 +152,10 @@ class MainWindow(QMainWindow):
         controls_layout.setContentsMargins(0, 0, 5, 0)
         controls_layout.setSpacing(10)
 
-        files_panel = Panel("Sources à analyser", "Ajoutez des fichiers ou un dossier complet. La sélection est conservée au prochain lancement.")
+        files_panel = Panel(
+            "Sources à analyser",
+            "Déposez les fichiers dans le dossier fixe data, puis ajoutez-les à l'analyse.",
+        )
         self.duplicate_files = CheckableFileList()
         self.duplicate_files.setMinimumHeight(150)
         self.duplicate_files.changed.connect(self._duplicate_sources_changed)
@@ -205,10 +209,18 @@ class MainWindow(QMainWindow):
             options_panel.layout.addWidget(checkbox)
         controls_layout.addWidget(options_panel)
 
-        export_panel = Panel("Dossier fixe des rapports")
-        self.duplicate_output = PathField("Emplacement", "Dossier des rapports", "Choisir")
-        self.duplicate_output.browseRequested.connect(self._choose_duplicate_output)
-        export_panel.layout.addWidget(self.duplicate_output)
+        export_panel = Panel(
+            "Dossiers fixes",
+            "Fichiers à analyser : data\nRapports exportés : output",
+        )
+        folder_actions = QHBoxLayout()
+        open_data = QPushButton("Ouvrir data")
+        open_data.clicked.connect(lambda: self._open_folder(str(self.directories.data)))
+        open_output = QPushButton("Ouvrir output")
+        open_output.clicked.connect(lambda: self._open_folder(str(self.directories.output)))
+        folder_actions.addWidget(open_data)
+        folder_actions.addWidget(open_output)
+        export_panel.layout.addLayout(folder_actions)
         self.analyze_button = QPushButton("Analyser les doublons", objectName="primary")
         self.analyze_button.clicked.connect(self._analyze_duplicates)
         export_panel.layout.addWidget(self.analyze_button)
@@ -309,17 +321,15 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, "Conversion impossible", message.split("\n", 1)[0])
 
     def _add_duplicate_files(self):
-        start = self.settings.value("duplicates/source_dir", str(default_work_directory()), str)
+        start = str(self.directories.data)
         paths, _ = QFileDialog.getOpenFileNames(self, "Fichiers à analyser", start, "Tables (*.csv *.xlsx *.xlsm *.xls *.ods)")
         if paths:
-            self.settings.setValue("duplicates/source_dir", str(Path(paths[0]).parent))
             self.duplicate_files.add_paths(paths)
 
     def _add_duplicate_folder(self):
-        start = self.settings.value("duplicates/source_dir", str(default_work_directory()), str)
+        start = str(self.directories.data)
         folder = QFileDialog.getExistingDirectory(self, "Dossier à analyser", start)
         if folder:
-            self.settings.setValue("duplicates/source_dir", folder)
             paths = supported_files_in_folder(folder, self.recursive_checkbox.isChecked())
             self.duplicate_files.add_paths([str(path) for path in paths])
             self.duplicate_status.setText(f"{len(paths)} fichier(s) trouvé(s) dans le dossier.")
@@ -341,12 +351,6 @@ class MainWindow(QMainWindow):
     def _toggle_columns(self, enabled: bool):
         self.column_list.setVisible(enabled)
         self.column_actions.setVisible(enabled)
-
-    def _choose_duplicate_output(self):
-        path = QFileDialog.getExistingDirectory(self, "Dossier des rapports", self.duplicate_output.text())
-        if path:
-            self.duplicate_output.setText(path)
-            self.settings.setValue("duplicates/output_dir", path)
 
     def _analyze_duplicates(self):
         paths = self.duplicate_files.selected_paths()
@@ -394,7 +398,7 @@ class MainWindow(QMainWindow):
     def _export_duplicate_result(self, extension: str):
         if not self.last_duplicate_result:
             return
-        folder = self.duplicate_output.text() or str(default_work_directory() / "Rapports_Doublons")
+        folder = str(self.directories.output)
         Path(folder).mkdir(parents=True, exist_ok=True)
         name = f"doublons_{datetime.now():%Y%m%d_%H%M%S}.{extension}"
         path = export_duplicates(self.last_duplicate_result, Path(folder) / name)
@@ -415,8 +419,6 @@ class MainWindow(QMainWindow):
         step = int(self.settings.value("conversion/step", 30))
         index = self.step_combo.findData(step)
         self.step_combo.setCurrentIndex(index if index >= 0 else 3)
-        default_reports = str(default_root / "Rapports_Doublons")
-        self.duplicate_output.setText(self.settings.value("duplicates/output_dir", default_reports, str))
         self.recursive_checkbox.setChecked(self.settings.value("duplicates/recursive", True, bool))
         self.business_mode.setChecked(self.settings.value("duplicates/business_mode", False, bool))
         self.trim_checkbox.setChecked(self.settings.value("duplicates/trim", True, bool))
@@ -427,7 +429,6 @@ class MainWindow(QMainWindow):
     def _save_settings(self, *_):
         self.settings.setValue("conversion/output_dir", self.curve_output.text())
         self.settings.setValue("conversion/step", int(self.step_combo.currentData()))
-        self.settings.setValue("duplicates/output_dir", self.duplicate_output.text())
         self.settings.setValue("duplicates/recursive", self.recursive_checkbox.isChecked())
         self.settings.setValue("duplicates/business_mode", self.business_mode.isChecked())
         self.settings.setValue("duplicates/trim", self.trim_checkbox.isChecked())

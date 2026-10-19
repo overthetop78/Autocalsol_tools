@@ -7,3 +7,7 @@ dist/
 validation_output*/
 exe_validation/
 *.spec
+data/*
+!data/.gitkeep
+output/*
+!output/.gitkeep

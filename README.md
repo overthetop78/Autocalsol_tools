@@ -36,8 +36,13 @@ main.py         # point d'entrée GUI et ligne de commande
 ```
 
 Les préférences sont enregistrées dans
-`%APPDATA%\AutocalsolTools\settings.ini`. Aucun résultat ni fichier de
-configuration n'est créé dans le dossier d'installation de l'application.
+`%APPDATA%\AutocalsolTools\settings.ini`.
+
+Comme dans le projet `duplicate-finder`, deux dossiers fixes sont créés à
+côté de l'exécutable :
+
+- `data/` pour les fichiers à analyser ;
+- `output/` pour les rapports CSV et Excel du Duplicate Finder.
 
 ## Installation et lancement
 

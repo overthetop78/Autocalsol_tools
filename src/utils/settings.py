@@ -1,12 +1,32 @@
 from __future__ import annotations
 
 import os
+import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
 
 
 APPLICATION_NAME = "AutocalsolTools"
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationDirectories:
+    root: Path
+    data: Path
+    output: Path
+
+
+def application_directories(root: Path | None = None) -> ApplicationDirectories:
+    """Create the fixed data/output folders used by Duplicate Finder."""
+    if root is None:
+        root = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+    data = root / "data"
+    output = root / "output"
+    data.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=True)
+    return ApplicationDirectories(root=root, data=data, output=output)
 
 
 def settings_file_path() -> Path:
@@ -49,8 +69,6 @@ def _migrate_legacy_directory_settings(target: QSettings) -> None:
         "conversion/source_dir",
         "conversion/output_dir",
         "conversion/step",
-        "duplicates/source_dir",
-        "duplicates/output_dir",
         "duplicates/recursive",
         "duplicates/business_mode",
         "duplicates/trim",
@@ -62,11 +80,4 @@ def _migrate_legacy_directory_settings(target: QSettings) -> None:
     for key in allowed_keys:
         if legacy.contains(key):
             value = legacy.value(key)
-            if key == "duplicates/output_dir" and _is_old_application_output(value):
-                continue
             target.setValue(key, value)
-
-
-def _is_old_application_output(value: object) -> bool:
-    path = Path(str(value))
-    return path.name.casefold() == "output" and path.parent.name.casefold() == APPLICATION_NAME.casefold()
