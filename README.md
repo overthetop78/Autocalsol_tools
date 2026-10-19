@@ -64,9 +64,9 @@ Il faut conserver le dossier complet pour exécuter l'application.
 Le workflow `Build Windows` exécute les tests, construit l'application sur
 Windows et produit `AutocalsolTools-Windows-x64.zip`.
 
-- après un push sur `main`, le ZIP est disponible dans l'onglet **Actions**, en
-  bas de la page du workflow terminé, dans **Artifacts** ;
-- le workflow peut aussi être lancé manuellement avec **Run workflow** ;
+- le workflow n'est pas lancé à chaque push sur `main` ;
+- il peut être lancé manuellement avec **Run workflow**, le ZIP étant ensuite
+  disponible dans les **Artifacts** ;
 - après le push d'un tag `v*`, par exemple `v1.0.0`, le ZIP est publié dans
   l'onglet **Releases** du dépôt.
 
